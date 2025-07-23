@@ -50,7 +50,9 @@ def extract_text(file):
     if file.type == "application/pdf":
         reader = PdfReader(file)
         return "\n".join(p.extract_text() or "" for p in reader.pages)
-    elif file.type.startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document"):
+    elif file.type.startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
         doc = Document(file)
         return "\n".join(p.text for p in doc.paragraphs)
     return ""
@@ -112,7 +114,8 @@ def save_submission(data):
 def fetch_submissions():
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query(
-        "SELECT name, email, course, computed_score, computed_grade, submitted_at FROM submissions ORDER BY submitted_at DESC",
+        "SELECT name, email, course, computed_score, computed_grade, submitted_at "
+        "FROM submissions ORDER BY submitted_at DESC",
         conn
     )
     conn.close()
@@ -134,8 +137,12 @@ with st.form(f"submit_form_{form_id}"):
     name = st.text_input("Student Name", key=f"name_{form_id}")
     email = st.text_input("Student Email", key=f"email_{form_id}")
     course = st.selectbox("Select Course", COURSES, key=f"course_{form_id}")
-    uploaded_file = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"], key=f"file_{form_id}")
-    rubric_text = st.text_area("Paste Grading Rubric (Full Text)", height=120, key=f"rubric_{form_id}")
+    uploaded_file = st.file_uploader(
+        "Upload PDF or DOCX", type=["pdf", "docx"], key=f"file_{form_id}"
+    )
+    rubric_text = st.text_area(
+        "Paste Grading Rubric (Full Text)", height=120, key=f"rubric_{form_id}"
+    )
     submitted = st.form_submit_button("Process Assignment")
 
 if submitted:
@@ -163,8 +170,12 @@ if st.session_state.get("data"):
     st.text_area("Prompt for ChatGPT", prompt, height=200, key=f"prompt_{form_id}")
     st.markdown("[Open ChatGPT](https://chat.openai.com/chat)", unsafe_allow_html=True)
 
-    scorecard_str = st.text_area("Paste ChatGPT JSON Scorecard", height=150, key=f"scorecard_{form_id}")
-    ai_feedback = st.text_area("Paste ChatGPT Feedback / AI Analysis", height=150, key=f"feedback_{form_id}")
+    scorecard_str = st.text_area(
+        "Paste ChatGPT JSON Scorecard", height=150, key=f"scorecard_{form_id}"
+    )
+    ai_feedback = st.text_area(
+        "Paste ChatGPT Feedback / AI Analysis", height=150, key=f"feedback_{form_id}"
+    )
 
     if scorecard_str:
         sc = parse_scorecard(scorecard_str)
@@ -196,13 +207,23 @@ if not sub_df.empty:
 
     col1, col2 = st.columns([3,1])
     with col1:
-        st.download_button("⬇️ Download All Submissions as CSV", csv, "submissions.csv", "text/csv")
+        st.download_button(
+            "⬇️ Download All Submissions as CSV",
+            csv,
+            "submissions.csv",
+            "text/csv"
+        )
     with col2:
         if st.button("➕ New Submission"):
             # increment form_id and clear data
             st.session_state['uploader_id'] += 1
             if 'data' in st.session_state:
                 del st.session_state['data']
-            st.experimental_rerun()
+            # safely rerun or fallback to page reload
+            try:
+                st.experimental_rerun()
+            except AttributeError:
+                st.write("<script>location.reload()</script>", unsafe_allow_html=True)
+
 else:
     st.info("No submissions recorded yet.")
